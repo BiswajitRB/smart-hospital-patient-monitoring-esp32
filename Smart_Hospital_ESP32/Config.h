@@ -3,20 +3,16 @@
 
 #include <Arduino.h>
 
-// =========================================================================================
 // 1. HOSPITAL WARD & PATIENT ELECTRONIC HEALTH RECORD (EHR) SETTINGS
-// =========================================================================================
 #define HOSPITAL_NAME         "APOLLO SMART HOSPITAL"
 #define WARD_NAME             "ICU WARD-B"
 #define BED_NUMBER            "BED-04"
 #define PATIENT_NAME          "R. Sharma"
 #define PATIENT_MRN           "MRN-1042"
 
-// =========================================================================================
 // 2. HARDWARE PIN DEFINITIONS (ESP32 WROOM-32 30-PIN)
-// =========================================================================================
 
-// --- 16x2 LCD Display Configuration (SixOhms JHD162A 16-Pin) ---
+// 16x2 LCD Display Configuration (SixOhms JHD162A 16-Pin)
 #define USE_I2C_LCD 0
 
 #if !USE_I2C_LCD
@@ -30,29 +26,27 @@
   #define LCD_I2C_ADDR 0x27
 #endif
 
-// --- MAX30102 Pulse Oximeter (I2C) ---
+// MAX30102 Pulse Oximeter (I2C)
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
-// --- DS18B20 Digital Body Temperature Sensor ---
+// DS18B20 Digital Body Temperature Sensor
 #define PIN_ONE_WIRE_BUS 4
 
-// --- Saline / IV Fluid Level Sensor (TekBud SEN18) ---
+// Saline / IV Fluid Level Sensor (TekBud SEN18)
 #define PIN_SALINE_ADC 34
 
-// --- Active Siren / Medical Alarm Buzzer ---
+// Active Siren / Medical Alarm Buzzer
 #define PIN_BUZZER 25
 
-// --- Onboard BOOT Button for Alarm Snooze / Acknowledgment ---
+// Onboard BOOT Button for Alarm Snooze / Acknowledgment
 #define PIN_BOOT_BUTTON 0
 
-// --- Touch-Sensitive Nurse Call / SOS Wire (ESP32 Capacitive Touch) ---
+// Touch-Sensitive Nurse Call / SOS Wire (ESP32 Capacitive Touch)
 #define PIN_TOUCH_NURSE_CALL 13
 #define TOUCH_SENSITIVITY_THRESHOLD 35
 
-// =========================================================================================
 // 3. NETWORK & ADAFRUIT IO CLOUD CREDENTIALS
-// =========================================================================================
 #define DEFAULT_WIFI_SSID     "YOUR_MOBILE_HOTSPOT_NAME"
 #define DEFAULT_WIFI_PASSWORD "YOUR_HOTSPOT_PASSWORD"
 
@@ -72,9 +66,7 @@
 
 #define WEB_SERVER_PORT       80
 
-// =========================================================================================
 // 4. CLINICAL ALARM TIERS (IEC 60601-1-8 ALARM MANAGEMENT)
-// =========================================================================================
 // High Priority Thresholds (Set to 37.0°C for instant finger-touch demo)
 #define THRESHOLD_TEMP_CRITICAL 37.0f // Lowered from 40°C so touching sensor with warm finger triggers demo!
 #define THRESHOLD_SALINE_EMPTY  10    // Critical air embolism hazard (< 10%)
@@ -90,9 +82,7 @@
 #define TELEMETRY_INTERVAL_MS 5000  // 5-second stepwise cloud update interval
 #define ALARM_SNOOZE_MS       60000 // 60 seconds nurse snooze duration
 
-// =========================================================================================
 // 5. SHARED PATIENT TELEMETRY DATA STRUCTURE
-// =========================================================================================
 enum AlarmPriority {
   ALARM_NONE = 0,
   ALARM_ADVISORY = 1, // Probe detached, no siren

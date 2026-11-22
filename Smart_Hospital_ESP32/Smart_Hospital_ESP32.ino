@@ -1,5 +1,4 @@
 /*
- * =========================================================================================
  * PROJECT: Clinical Bedside Patient Monitoring System (ESP32 Smart Hospital Model)
  * ARCHITECTURE: Real-World Clinical Hospital Standard (Tiered Alarms & EHR Integration)
  * 
@@ -21,7 +20,6 @@
  * - Clinical Early Warning Score (EWS: STABLE / OBSERVE / CRITICAL)
  * - One-Click Doctor's Rounds Vital Signs Chart Export (CSV / Excel format)
  * - Cloud Telemetry via Adafruit IO (iot.adafruit.com)
- * =========================================================================================
  */
 
 #include "Config.h"
@@ -31,7 +29,7 @@
 #include "WebDashboard.h"
 #include "AdafruitIOManager.h"
 
-// --- Global Subsystem Managers ---
+// Global Subsystem Managers
 SensorManager       sensorMgr;
 DisplayManager      displayMgr;
 AlertManager        alertMgr;
@@ -64,10 +62,8 @@ unsigned long lastDisplayTime   = 0;
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("\n========================================================");
-  Serial.println(" " HOSPITAL_NAME " - CLINICAL BEDSIDE HUB");
-  Serial.println(" Ward: " WARD_NAME " | Bed: " BED_NUMBER " | Patient: " PATIENT_NAME);
-  Serial.println("========================================================");
+  Serial.println("\nAPOLLO SMART HOSPITAL - CLINICAL BEDSIDE HUB");
+  Serial.println("Ward: " WARD_NAME " | Bed: " BED_NUMBER " | Patient: " PATIENT_NAME);
 
   // 1. Initialize Siren / Buzzer Subsystem & Diagnostic Chirp
   alertMgr.begin();
@@ -113,7 +109,6 @@ void loop() {
     adafruitIO.publishVitals(patientData);
 
     // Log live clinical telemetry to Serial Monitor
-    Serial.println("--------------------------------------------------------");
     Serial.print("HR: "); Serial.print((int)patientData.heartRateBPM); Serial.print(" BPM | ");
     Serial.print("SpO2: "); Serial.print(patientData.spo2); Serial.print("% | ");
     Serial.print("Temp: "); Serial.print(patientData.temperatureC, 1); Serial.print(" C | ");
