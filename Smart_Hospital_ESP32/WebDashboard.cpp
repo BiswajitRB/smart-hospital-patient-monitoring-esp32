@@ -288,12 +288,12 @@ const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
             bannerText.innerText = (data.snoozed ? '🔕 SNOOZED: ' : '🚨 EMERGENCY SIREN: ') + data.alertMsg;
 
             if (!data.snoozed) {
-              if (data.nurseCall) {
+              if (data.tempC >= 40.0) {
+                speakAnnouncement("Emergency: High fever detected on Bed 4. Temperature is over 40 degrees Celsius.");
+              } else if (data.nurseCall) {
                 speakAnnouncement("Emergency: Nurse assistance requested from Bed 4.");
               } else if (data.saline < 10) {
                 speakAnnouncement("Critical Alert: Saline bottle is empty on Bed 4. Please replace intravenous drip immediately.");
-              } else if (data.tempC >= 40.0) {
-                speakAnnouncement("Emergency: High fever detected on Bed 4. Temperature is over 40 degrees Celsius.");
               } else if (data.spo2 < 88 && data.finger) {
                 speakAnnouncement("Warning: Severe low blood oxygen detected on Bed 4.");
               }
