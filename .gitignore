@@ -1,0 +1,49 @@
+# =========================================================================
+# GITIGNORE: ESP32 Arduino & Embedded IoT Project
+# =========================================================================
+
+# --- Media & Images ---
+*.jpeg
+*.jpg
+*.png
+
+# --- Arduino IDE & Compiler Build Artifacts ---
+build/
+*.bin
+*.hex
+*.elf
+*.o
+*.a
+*.d
+*.map
+*.eep
+*.lst
+*.asm
+
+# --- PlatformIO & VS Code ---
+.pio/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Operating System Files ---
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# --- Medical Clinical CSV Reports (Generated Locally) ---
+*.csv
+*.log
