@@ -22,7 +22,8 @@ echo [2/3] Installing ESP32 Board Core (Please wait 1-2 minutes)...
 %CLI% core install esp32:esp32 --additional-urls %ESP32_URL%
 
 echo.
-echo [3/3] Installing Sensor Libraries...
+echo [3/3] Installing Sensor & LCD Libraries...
+%CLI% lib install "LiquidCrystal"
 %CLI% lib install "SparkFun MAX3010x Pulse and Proximity Sensor Library"
 %CLI% lib install "DallasTemperature"
 %CLI% lib install "OneWire"
