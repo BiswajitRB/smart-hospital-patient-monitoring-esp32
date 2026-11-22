@@ -1,6 +1,6 @@
 @echo off
 echo =========================================================================
-echo STEP 1: Installing ESP32 Board Core and Required Libraries
+echo STEP 1: Installing Stable ESP32 Board Core (v3.0.7) and Libraries
 echo =========================================================================
 
 set CLI="C:\Users\%USERNAME%\AppData\Local\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe"
@@ -18,11 +18,12 @@ echo [1/3] Updating ESP32 Package Index...
 %CLI% core update-index --additional-urls %ESP32_URL%
 
 echo.
-echo [2/3] Installing ESP32 Board Core (Please wait 1-2 minutes)...
-%CLI% core install esp32:esp32 --additional-urls %ESP32_URL%
+echo [2/3] Installing Stable ESP32 Core v3.0.7 (Fixes 4.0.0 missing compiler bug)...
+%CLI% core uninstall esp32:esp32
+%CLI% core install esp32:esp32@3.0.7 --additional-urls %ESP32_URL%
 
 echo.
-echo [3/3] Installing Sensor & LCD Libraries...
+echo [3/3] Installing Required Libraries...
 %CLI% lib install "LiquidCrystal"
 %CLI% lib install "SparkFun MAX3010x Pulse and Proximity Sensor Library"
 %CLI% lib install "DallasTemperature"
@@ -30,6 +31,6 @@ echo [3/3] Installing Sensor & LCD Libraries...
 
 echo.
 echo =========================================================================
-echo [SUCCESS] ESP32 Core and Sensor Libraries Installed!
+echo [SUCCESS] Stable ESP32 Core v3.0.7 Installed Successfully!
 echo =========================================================================
 pause
