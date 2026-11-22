@@ -75,8 +75,8 @@
 // =========================================================================================
 // 4. CLINICAL ALARM TIERS (IEC 60601-1-8 ALARM MANAGEMENT)
 // =========================================================================================
-// High Priority Thresholds (Continuous Siren + Immediate Spoken Voice)
-#define THRESHOLD_TEMP_CRITICAL 40.0f // Life-critical hyperthermia (> 40°C)
+// High Priority Thresholds (Set to 37.0°C for instant finger-touch demo)
+#define THRESHOLD_TEMP_CRITICAL 37.0f // Lowered from 40°C so touching sensor with warm finger triggers demo!
 #define THRESHOLD_SALINE_EMPTY  10    // Critical air embolism hazard (< 10%)
 #define THRESHOLD_SPO2_CRITICAL 88    // Severe hypoxemia (< 88%)
 #define THRESHOLD_HR_CRIT_HIGH  130   // Severe tachycardia (> 130 BPM)

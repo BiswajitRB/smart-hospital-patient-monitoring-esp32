@@ -34,11 +34,11 @@ void AlertManager::evaluate(PatientVitals &vitals) {
 
   // --- TIER 1: HIGH PRIORITY LIFE-CRITICAL ALARMS ---
   
-  // 1. High Fever Detection (Temp >= 40.0°C) - Immediate Top Priority
+  // 1. High Fever Detection (Temp >= 37.0°C Demo Mode) - Immediate Top Priority
   if (vitals.temperatureC >= THRESHOLD_TEMP_CRITICAL) {
     vitals.alarmLevel = ALARM_HIGH;
     vitals.isEmergency = true;
-    vitals.alertMessage = "Fever >= 40C Critical!";
+    vitals.alertMessage = "Fever Alert > 37C!";
   }
   // 2. Touch-Sensitive Nurse Call SOS
   else if (vitals.nurseCallActive) {

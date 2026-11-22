@@ -117,11 +117,9 @@ void SensorManager::computeEarlyWarningScore(PatientVitals &vitals) {
   int score = 0;
 
   // 1. Temperature scoring
-  if (vitals.temperatureC >= 40.0f || (vitals.temperatureC < 35.0f && vitals.temperatureC > 0)) {
+  if (vitals.temperatureC >= 37.0f || (vitals.temperatureC < 35.0f && vitals.temperatureC > 0)) {
     score += 3;
-  } else if (vitals.temperatureC >= 38.5f) {
-    score += 2;
-  } else if (vitals.temperatureC >= 37.6f) {
+  } else if (vitals.temperatureC >= 36.6f) {
     score += 1;
   }
 
