@@ -1,5 +1,8 @@
 #include "WebDashboard.h"
 #include "AlertManager.h"
+#include <Preferences.h>
+
+Preferences prefs;
 
 // Medical Log Buffer for Clinical Rounds
 struct VitalLogEntry {
@@ -29,7 +32,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
     body { background: linear-gradient(135deg, #090e17 0%, #162033 100%); color: #f8fafc; min-height: 100vh; padding: 16px; }
     .container { max-width: 980px; margin: 0 auto; }
     
-    /* Hospital Bed Banner */
     .hospital-header { background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 20px 25px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .hospital-title h1 { font-size: 24px; font-weight: 700; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .hospital-title p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
@@ -37,7 +39,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
     .patient-badge .name { font-weight: 700; color: #e2e8f0; font-size: 14px; }
     .patient-badge .mrn { font-size: 12px; color: #38bdf8; }
     
-    /* Action & Intercom Bar */
     .action-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 12px 18px; border-radius: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
     .status-pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; }
     .pill-stable { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
@@ -49,284 +50,192 @@ const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
     .action-btn:hover { background: #0369a1; }
     .btn-snooze { background: #d97706; }
     .btn-snooze:hover { background: #b45309; }
-    .btn-export { background: #059669; }
-    .btn-export:hover { background: #047857; }
+    .btn-wifi { background: #475569; }
+    .btn-wifi:hover { background: #334155; }
     
-    /* Status Banner */
-    .status-banner { padding: 14px 18px; border-radius: 14px; text-align: center; font-weight: 600; font-size: 15px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; }
-    .status-normal { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); color: #4ade80; }
-    .status-alert { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; animation: pulse 1s infinite alternate; }
-    @keyframes pulse { from { opacity: 0.85; transform: scale(1); } to { opacity: 1; transform: scale(1.01); } }
+    .vitals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .vital-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+    .vital-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+    .card-bpm::before { background: #ef4444; }
+    .card-spo2::before { background: #06b6d4; }
+    .card-temp::before { background: #f59e0b; }
+    .card-saline::before { background: #3b82f6; }
     
-    /* ECG Waveform Card */
-    .ecg-card { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 18px; padding: 18px; margin-bottom: 18px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
-    .ecg-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #38bdf8; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 10px; }
-    canvas { width: 100%; height: 110px; background: #030712; border-radius: 10px; display: block; border: 1px solid rgba(56, 189, 248, 0.1); }
+    .vital-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+    .vital-value { font-size: 38px; font-weight: 800; font-family: monospace; margin: 10px 0 4px; color: #ffffff; }
+    .vital-unit { font-size: 14px; font-weight: 500; color: #94a3b8; margin-left: 4px; }
+    .vital-status { font-size: 11px; font-weight: 600; }
+    .text-good { color: #4ade80; }
+    .text-warn { color: #fbbf24; }
+    .text-alert { color: #f87171; }
     
-    /* Vitals Grid */
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px; }
-    .card { background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 18px; padding: 20px; position: relative; transition: transform 0.2s; box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
-    .card:hover { transform: translateY(-3px); }
+    .ecg-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 18px; margin-bottom: 16px; }
+    .ecg-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    canvas { width: 100%; height: 140px; background: #040810; border-radius: 10px; display: block; }
     
-    .card-icon { font-size: 28px; margin-bottom: 8px; display: inline-block; }
-    .beating { animation: beat 0.9s infinite cubic-bezier(0.215, 0.61, 0.355, 1); }
-    @keyframes beat { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
+    /* Wi-Fi Setup Form Modal */
+    .wifi-box { background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; border-radius: 16px; padding: 20px; margin-bottom: 16px; display: none; }
+    .wifi-box h3 { font-size: 16px; color: #38bdf8; margin-bottom: 10px; }
+    .wifi-box input { width: 100%; padding: 10px; margin-bottom: 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 13px; }
+    .wifi-box button { width: 100%; padding: 10px; background: #0284c7; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
     
-    .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
-    .card-value { font-size: 38px; font-weight: 800; margin: 6px 0; color: #ffffff; }
-    .card-unit { font-size: 16px; font-weight: 500; color: #64748b; margin-left: 4px; }
-    .card-sub { font-size: 13px; color: #94a3b8; margin-top: 6px; }
-    
-    /* Saline Progress Bar */
-    .progress-bar-container { width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 10px; height: 16px; margin-top: 12px; overflow: hidden; }
-    .progress-bar { height: 100%; border-radius: 10px; transition: width 0.6s ease, background 0.4s ease; background: linear-gradient(90deg, #06b6d4, #3b82f6); }
-    
-    .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 20px; padding-bottom: 20px; }
-    .footer a { color: #38bdf8; text-decoration: none; }
+    @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Clinical Bed Banner -->
     <div class="hospital-header">
       <div class="hospital-title">
-        <h1>🏥 Apollo Smart Hospital</h1>
-        <p>Ward: <b>ICU WARD-B</b> &bull; Station: <b>BED-04</b> &bull; Telemetry Hub</p>
+        <h1>APOLLO SMART HOSPITAL</h1>
+        <p>ICU WARD-B | BEDSIDE TELEMETRY MONITOR</p>
       </div>
       <div class="patient-badge">
-        <div class="name">Patient: R. Sharma</div>
-        <div class="mrn">MRN: #1042 &bull; Adult Male</div>
+        <div class="name">PATIENT: R. Sharma</div>
+        <div class="mrn">BED: BED-04 | MRN-1042</div>
       </div>
     </div>
 
-    <!-- Action Bar: Clinical Status & Controls -->
     <div class="action-bar">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <span id="ewsBadge" class="status-pill pill-stable">🟢 STABLE (Score: 0)</span>
-      </div>
+      <div id="statusPill" class="status-pill pill-stable">● PATIENT STABLE</div>
       <div class="btn-group">
-        <button class="action-btn" onclick="testVoice()">🔊 Voice Intercom</button>
-        <button class="action-btn btn-snooze" onclick="snoozeAlarm()">🔕 Mute Alarm (60s)</button>
-        <a href="/download-report" class="action-btn btn-export">📥 Export Rounds Chart (CSV)</a>
+        <button class="action-btn btn-snooze" onclick="snoozeAlarm()">SNOOZE (60s)</button>
+        <button class="action-btn btn-wifi" onclick="toggleWifiBox()">CONFIG WI-FI</button>
+        <a class="action-btn" href="/download-report">EXPORT CSV</a>
       </div>
     </div>
 
-    <!-- Live Status Banner -->
-    <div id="statusBanner" class="status-banner status-normal">
-      <span>✅</span> <span id="bannerText">Connecting to bedside telemetry...</span>
+    <!-- Dynamic Wi-Fi Hotspot Setup Box -->
+    <div id="wifiBox" class="wifi-box">
+      <h3>Connect to Any Mobile Hotspot / Wi-Fi</h3>
+      <form action="/save-wifi" method="POST">
+        <input type="text" name="ssid" placeholder="Hotspot Name (SSID)" required>
+        <input type="password" name="pass" placeholder="Hotspot Password">
+        <button type="submit">Connect ESP32 to Hotspot</button>
+      </form>
     </div>
 
-    <!-- Real-time Hospital ECG Waveform Tracing -->
+    <div class="vitals-grid">
+      <div class="vital-card card-bpm">
+        <div class="vital-title">Heart Rate (Pulse)</div>
+        <div class="vital-value"><span id="bpm">--</span><span class="vital-unit">BPM</span></div>
+        <div id="bpmStatus" class="vital-status text-good">60 - 100 Normal</div>
+      </div>
+
+      <div class="vital-card card-spo2">
+        <div class="vital-title">Blood Oxygen (SpO2)</div>
+        <div class="vital-value"><span id="spo2">--</span><span class="vital-unit">%</span></div>
+        <div id="spo2Status" class="vital-status text-good">&ge; 95% Optimal</div>
+      </div>
+
+      <div class="vital-card card-temp">
+        <div class="vital-title">Body Temperature</div>
+        <div class="vital-value"><span id="temp">--</span><span class="vital-unit">&deg;C</span></div>
+        <div id="tempStatus" class="vital-status text-good">36.1 - 37.0 Normal</div>
+      </div>
+
+      <div class="vital-card card-saline">
+        <div class="vital-title">IV Saline Fluid</div>
+        <div class="vital-value"><span id="saline">--</span><span class="vital-unit">%</span></div>
+        <div id="salineStatus" class="vital-status text-good">~<span id="salineMins">--</span>m remaining</div>
+      </div>
+    </div>
+
     <div class="ecg-card">
-      <div class="ecg-header">
-        <span>📈 LIVE CARDIAC ECG / PULSE TRACE</span>
-        <span id="ecgRate">LEAD II &bull; 60 BPM</span>
+      <div class="ecg-title">
+        <span>LEAD-II ECG WAVEFORM (Dynamic 25mm/s)</span>
+        <span style="font-size:11px;color:#94a3b8;">Filter: 0.05-40Hz</span>
       </div>
-      <canvas id="ecgCanvas" width="900" height="110"></canvas>
-    </div>
-
-    <div class="grid">
-      <!-- Heartbeat Card -->
-      <div class="card">
-        <div class="card-icon beating">❤️</div>
-        <div class="card-title">Pulse Rate (Heartbeat)</div>
-        <div class="card-value"><span id="bpm">--</span><span class="card-unit">BPM</span></div>
-        <div class="card-sub" id="fingerState">🔍 Optical oximeter active</div>
-      </div>
-
-      <!-- SpO2 Card -->
-      <div class="card">
-        <div class="card-icon">🫁</div>
-        <div class="card-title">Blood Oxygen (SpO₂)</div>
-        <div class="card-value"><span id="spo2">--</span><span class="card-unit">%</span></div>
-        <div class="card-sub">Normal Range: 95% – 100%</div>
-      </div>
-
-      <!-- Body Temperature Card -->
-      <div class="card">
-        <div class="card-icon">🌡️</div>
-        <div class="card-title">Body Temperature</div>
-        <div class="card-value"><span id="tempC">--</span><span class="card-unit">&deg;C</span></div>
-        <div class="card-sub"><span id="tempF">--</span> &deg;F (Normal: 36.5&deg;C – 37.5&deg;C)</div>
-      </div>
-
-      <!-- Saline IV Drip Card -->
-      <div class="card">
-        <div class="card-icon">💧</div>
-        <div class="card-title">Saline Drip Level</div>
-        <div class="card-value"><span id="salineVal">--</span><span class="card-unit">%</span></div>
-        <div class="progress-bar-container">
-          <div id="salineBar" class="progress-bar" style="width: 0%;"></div>
-        </div>
-        <div class="card-sub" id="salineSub">Status: Checking fluid...</div>
-      </div>
-    </div>
-
-    <div class="footer">
-      ESP32 Clinical Bedside Station &bull; Cloud Telemetry via <a href="https://io.adafruit.com" target="_blank">Adafruit IO</a>
+      <canvas id="ecgCanvas" width="900" height="140"></canvas>
     </div>
   </div>
 
   <script>
-    // --- Web Speech API: Communicative Audio Engine ---
-    let voiceActive = true;
-    let lastSpokenText = "";
-    let lastSpokeTime = 0;
-
-    function speakAnnouncement(text) {
-      if (!voiceActive || !('speechSynthesis' in window)) return;
-      const now = Date.now();
-      if (text === lastSpokenText && (now - lastSpokeTime < 12000)) return;
-
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 0.95;
-      utter.pitch = 1.0;
-      utter.volume = 1.0;
-      utter.lang = 'en-US';
-      window.speechSynthesis.speak(utter);
-      lastSpokenText = text;
-      lastSpokeTime = now;
-    }
-
-    function testVoice() {
-      speakAnnouncement("Bed four intercom test: hospital audio telemetry active.");
+    function toggleWifiBox() {
+      const box = document.getElementById('wifiBox');
+      box.style.display = box.style.display === 'block' ? 'none' : 'block';
     }
 
     function snoozeAlarm() {
-      fetch('/snooze')
-        .then(() => {
-          speakAnnouncement("Alarm acknowledged and muted for sixty seconds.");
-          document.getElementById('bannerText').innerText = "🔕 Siren Muted by Staff (60s)";
-        })
-        .catch(err => console.error(err));
+      fetch('/snooze').then(() => alert("Bedside Alarm Snoozed for 60 seconds"));
     }
 
-    // --- Live ECG Waveform Animation ---
+    // ECG Canvas Simulator
     const canvas = document.getElementById('ecgCanvas');
     const ctx = canvas.getContext('2d');
     let x = 0;
-    let lastY = canvas.height / 2;
-    let currentBpm = 75;
-    let beatStep = 0;
+    let step = 0;
+    const midY = canvas.height / 2;
 
     function drawECG() {
-      ctx.fillStyle = 'rgba(3, 7, 18, 0.08)';
+      step = (step + 1) % 80;
+      let y = midY;
+      if (step === 15) y = midY - 8;
+      else if (step === 25) y = midY + 4;
+      else if (step === 27) y = midY - 45;
+      else if (step === 29) y = midY + 12;
+      else if (step === 40) y = midY - 12;
+
+      ctx.fillStyle = 'rgba(4, 8, 16, 0.05)';
       ctx.fillRect(x, 0, 4, canvas.height);
 
       ctx.beginPath();
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 2.2;
-      ctx.shadowBlur = 4;
-      ctx.shadowColor = '#22c55e';
-      ctx.moveTo(x, lastY);
-
-      let targetY = canvas.height / 2;
-      beatStep = (beatStep + 1) % 45;
-
-      if (beatStep === 20) targetY -= 8;
-      else if (beatStep === 22) targetY += 12;
-      else if (beatStep === 24) targetY -= 48;
-      else if (beatStep === 26) targetY += 24;
-      else if (beatStep === 30) targetY -= 14;
-
-      x += 2;
-      if (x > canvas.width) {
-        x = 0;
-      }
-
-      ctx.lineTo(x, targetY);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.moveTo(x, y);
+      x = (x + 2) % canvas.width;
+      ctx.lineTo(x, y);
       ctx.stroke();
-      lastY = targetY;
 
       requestAnimationFrame(drawECG);
     }
     drawECG();
 
-    // --- Live Telemetry Data Fetching ---
-    function updateTelemetry() {
+    // Live Telemetry Poller
+    setInterval(() => {
       fetch('/data')
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-          currentBpm = data.finger ? data.bpm : 70;
-          document.getElementById('bpm').innerText = data.finger ? data.bpm : '--';
-          document.getElementById('spo2').innerText = data.finger ? data.spo2 : '--';
-          document.getElementById('fingerState').innerText = data.finger ? '✅ Pulse Detected' : '🔍 Oximeter probe detached';
-          document.getElementById('tempC').innerText = data.tempC.toFixed(1);
-          document.getElementById('tempF').innerText = data.tempF.toFixed(1);
-          document.getElementById('ecgRate').innerText = 'LEAD II • ' + (data.finger ? data.bpm + ' BPM' : 'Probe Detached');
-          
-          document.getElementById('salineVal').innerText = data.saline;
-          const sBar = document.getElementById('salineBar');
-          sBar.style.width = data.saline + '%';
-          if (data.saline < 10) {
-            sBar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-          } else if (data.saline < 25) {
-            sBar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-          } else {
-            sBar.style.background = 'linear-gradient(90deg, #06b6d4, #3b82f6)';
-          }
-          document.getElementById('salineSub').innerText = 'Level: ' + data.salineStatus + ' (~' + data.salineMins + 'm remaining)';
+          document.getElementById('bpm').innerText = data.bpm > 0 ? data.bpm : '--';
+          document.getElementById('spo2').innerText = data.spo2 > 0 ? data.spo2 : '--';
+          document.getElementById('temp').innerText = data.tempC > 0 ? data.tempC.toFixed(1) : '--';
+          document.getElementById('saline').innerText = data.saline;
+          document.getElementById('salineMins').innerText = data.salineMins;
 
-          const badge = document.getElementById('ewsBadge');
-          if (data.ewsStatus === "CRITICAL") {
-            badge.className = 'status-pill pill-critical';
-            badge.innerText = '🔴 CRITICAL (Score: ' + data.ewsScore + ')';
-          } else if (data.ewsStatus === "OBSERVE") {
-            badge.className = 'status-pill pill-observe';
-            badge.innerText = '🟡 OBSERVE (Score: ' + data.ewsScore + ')';
-          } else {
-            badge.className = 'status-pill pill-stable';
-            badge.innerText = '🟢 STABLE (Score: ' + data.ewsScore + ')';
-          }
-
-          const banner = document.getElementById('statusBanner');
-          const bannerText = document.getElementById('bannerText');
-
-          if (data.emergency) {
-            banner.className = 'status-banner status-alert';
-            bannerText.innerText = (data.snoozed ? '🔕 SNOOZED: ' : '🚨 EMERGENCY SIREN: ') + data.alertMsg;
-
-            if (!data.snoozed) {
-              if (data.tempC >= 37.0) {
-                speakAnnouncement("Emergency: High fever detected on Bed 4. Temperature has exceeded threshold.");
-              } else if (data.nurseCall) {
-                speakAnnouncement("Emergency: Nurse assistance requested from Bed 4.");
-              } else if (data.saline < 10) {
-                speakAnnouncement("Critical Alert: Saline bottle is empty on Bed 4. Please replace intravenous drip immediately.");
-              } else if (data.spo2 < 88 && data.finger) {
-                speakAnnouncement("Warning: Severe low blood oxygen detected on Bed 4.");
-              }
-            }
-          } else {
-            banner.className = 'status-banner status-normal';
-            bannerText.innerText = '✅ Patient Status: Stable & Monitored';
-          }
+          const pill = document.getElementById('statusPill');
+          pill.className = 'status-pill ' + (data.emergency ? 'pill-critical' : (data.ewsScore > 0 ? 'pill-observe' : 'pill-stable'));
+          pill.innerText = data.emergency ? '🚨 ' + data.alertMsg.toUpperCase() : '● PATIENT ' + data.ewsStatus;
         })
-        .catch(err => {
-          console.error("Telemetry error:", err);
-        });
-    }
-    setInterval(updateTelemetry, 1000);
-    window.onload = updateTelemetry;
+        .catch(err => console.log(err));
+    }, 2000);
   </script>
 </body>
 </html>
 )rawliteral";
 
-WebDashboard::WebDashboard() : server(WEB_SERVER_PORT), vitalsRef(nullptr), alertMgrRef(nullptr) {}
+WebDashboard::WebDashboard() : server(80), vitalsRef(nullptr), alertMgrRef(nullptr) {}
 
-void WebDashboard::begin(PatientVitals *sharedVitals, AlertManager *alertManagerRef) {
-  vitalsRef = sharedVitals;
-  alertMgrRef = alertManagerRef;
+void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
+  vitalsRef = vitals;
+  alertMgrRef = alertMgr;
 
+  // Always broadcast our hospital bedside SoftAP
   WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
 
   Serial.println("[WebDashboard] Standalone Hospital SoftAP Started: " AP_SSID);
   Serial.print("[WebDashboard] AP IP: ");
   Serial.println(WiFi.softAPIP());
+
+  // Read saved hotspot credentials from ESP32 NVS (Non-Volatile Flash)
+  prefs.begin("hospital_wifi", false);
+  String savedSSID = prefs.getString("ssid", DEFAULT_WIFI_SSID);
+  String savedPass = prefs.getString("pass", DEFAULT_WIFI_PASSWORD);
+  prefs.end();
+
+  Serial.print("[WebDashboard] Attempting Wi-Fi Connection to: ");
+  Serial.println(savedSSID);
+
+  WiFi.begin(savedSSID.c_str(), savedPass.c_str());
 
   int retries = 0;
   while (WiFi.status() != WL_CONNECTED && retries < 10) {
@@ -336,11 +245,11 @@ void WebDashboard::begin(PatientVitals *sharedVitals, AlertManager *alertManager
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n[WebDashboard] Connected to Station Wi-Fi!");
+    Serial.println("\n[WebDashboard] Connected to Wi-Fi Station!");
     Serial.print("[WebDashboard] Hospital Station IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\n[WebDashboard] Hotspot not found. Running in Standalone Bedside AP mode.");
+    Serial.println("\n[WebDashboard] Hotspot not found. You can configure any mobile hotspot via http://192.168.4.1");
   }
 
   setupRoutes();
@@ -359,6 +268,31 @@ void WebDashboard::setupRoutes() {
       server.send(200, "text/plain", "Snoozed");
     } else {
       server.send(500, "text/plain", "AlertManager not linked");
+    }
+  });
+
+  // Dynamic Wi-Fi Hotspot Saver (Stores into Non-Volatile Flash Memory)
+  server.on("/save-wifi", HTTP_POST, [this]() {
+    String newSSID = server.arg("ssid");
+    String newPass = server.arg("pass");
+
+    if (newSSID.length() > 0) {
+      prefs.begin("hospital_wifi", false);
+      prefs.putString("ssid", newSSID);
+      prefs.putString("pass", newPass);
+      prefs.end();
+
+      String html = "<html><body style='font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:40px;'>";
+      html += "<h2 style='color:#38bdf8;'>Wi-Fi Credentials Saved!</h2>";
+      html += "<p>Connecting ESP32 to: <b>" + newSSID + "</b>...</p>";
+      html += "<p>ESP32 is rebooting. Please wait 5 seconds.</p>";
+      html += "</body></html>";
+      server.send(200, "text/html", html);
+
+      delay(1500);
+      ESP.restart();
+    } else {
+      server.send(400, "text/plain", "SSID cannot be empty");
     }
   });
 
