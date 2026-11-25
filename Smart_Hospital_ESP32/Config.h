@@ -54,6 +54,10 @@
 #define AP_SSID               "Smart-Hospital-Bed04"
 #define AP_PASSWORD           "hospital123"
 
+// 4. VERCEL & MONGODB CLOUD TELEMETRY URL
+// Replace with your real live Vercel URL once deployed
+#define VERCEL_TELEMETRY_URL  "https://smart-hospital-web.vercel.app/api/telemetry"
+
 // Adafruit IO Credentials (from https://io.adafruit.com)
 #define AIO_USERNAME          "YOUR_ADAFRUIT_USERNAME"
 #define AIO_KEY               "YOUR_ADAFRUIT_AIO_KEY"

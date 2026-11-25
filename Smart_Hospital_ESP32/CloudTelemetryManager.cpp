@@ -1,7 +1,7 @@
 #include "CloudTelemetryManager.h"
 
 CloudTelemetryManager::CloudTelemetryManager() {
-  vercelApiUrl = "https://your-hospital-app.vercel.app/api/telemetry";
+  vercelApiUrl = VERCEL_TELEMETRY_URL;
 }
 
 void CloudTelemetryManager::begin() {

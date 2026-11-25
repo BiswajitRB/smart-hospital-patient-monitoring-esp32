@@ -28,13 +28,15 @@
 #include "AlertManager.h"
 #include "WebDashboard.h"
 #include "AdafruitIOManager.h"
+#include "CloudTelemetryManager.h"
 
 // Global Subsystem Managers
-SensorManager       sensorMgr;
-DisplayManager      displayMgr;
-AlertManager        alertMgr;
-WebDashboard        webDashboard;
-AdafruitIOManager   adafruitIO;
+SensorManager           sensorMgr;
+DisplayManager          displayMgr;
+AlertManager            alertMgr;
+WebDashboard            webDashboard;
+AdafruitIOManager       adafruitIO;
+CloudTelemetryManager   cloudTelemetry;
 
 // Shared Patient Telemetry State
 PatientVitals patientData = {
@@ -82,8 +84,9 @@ void setup() {
   displayMgr.showWifiStatus(webDashboard.isConnectedToStation(), webDashboard.getLocalIP());
   delay(2000);
 
-  // 5. Initialize Adafruit IO Cloud
+  // 5. Initialize Adafruit IO Cloud & Vercel MongoDB Cloud
   adafruitIO.begin();
+  cloudTelemetry.begin();
 
   Serial.println("[System] All clinical modules initialized. Ready.");
 }
@@ -107,6 +110,9 @@ void loop() {
 
     // Publish to Adafruit IO Cloud (iot.adafruit.com)
     adafruitIO.publishVitals(patientData);
+
+    // Stream live to Vercel Next.js Cloud Dashboard & MongoDB Atlas
+    cloudTelemetry.sendTelemetry(patientData);
 
     // Log live clinical telemetry to Serial Monitor
     Serial.print("HR: "); Serial.print((int)patientData.heartRateBPM); Serial.print(" BPM | ");
