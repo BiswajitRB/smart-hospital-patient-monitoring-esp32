@@ -28,6 +28,7 @@ echo [3/3] Installing Required Libraries...
 %CLI% lib install "SparkFun MAX3010x Pulse and Proximity Sensor Library"
 %CLI% lib install "DallasTemperature"
 %CLI% lib install "OneWire"
+%CLI% lib install "HX711"
 
 echo.
 echo =========================================================================

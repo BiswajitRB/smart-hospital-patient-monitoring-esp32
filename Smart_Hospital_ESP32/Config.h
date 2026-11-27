@@ -33,7 +33,13 @@
 // DS18B20 Digital Body Temperature Sensor
 #define PIN_ONE_WIRE_BUS 4
 
-// Saline / IV Fluid Level Sensor (TekBud SEN18)
+// Saline / IV Fluid Weight Sensor (1KG Load Cell + HX711 24-bit ADC)
+#define PIN_HX711_DOUT 32               // HX711 Data Output Pin
+#define PIN_HX711_SCK  33               // HX711 Serial Clock Pin
+#define FULL_SALINE_BOTTLE_GRAMS 500.0f // Standard 500ml IV Saline Bottle (500 grams)
+#define HX711_CALIBRATION_FACTOR 420.0f // Calibration factor for 1KG Load Cell
+
+// Fallback Analog Saline Pin (if load cell is not connected)
 #define PIN_SALINE_ADC 34
 
 // Active Siren / Medical Alarm Buzzer
@@ -101,6 +107,7 @@ struct PatientVitals {
   float temperatureC;
   float temperatureF;
   int   salinePercent;
+  float salineWeightGrams;  // Real-time mass in grams from 1KG Load Cell
   int   salineMinutesLeft;  // Estimated IV fluid exhaustion time in minutes
   String salineStatus;      // "FULL", "NORMAL", "LOW", "EMPTY"
   bool  nurseCallActive;    // Touch-sensitive nurse call state

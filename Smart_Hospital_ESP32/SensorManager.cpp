@@ -4,6 +4,8 @@ SensorManager::SensorManager()
   : oneWire(PIN_ONE_WIRE_BUS), 
     tempSensor(&oneWire),
     max30102Available(false),
+    hx711Available(false),
+    currentSalineGrams(0.0f),
     rateSpot(0),
     lastBeat(0),
     irValue(0),
@@ -43,8 +45,18 @@ bool SensorManager::begin() {
     Serial.println("[SensorManager] WARNING: MAX30102 not detected. Check I2C wiring (SDA=21, SCL=22).");
   }
 
-  // 3. Configure Saline ADC pin
-  pinMode(PIN_SALINE_ADC, INPUT);
+  // 3. Initialize HX711 1KG Load Cell Saline Sensor
+  scale.begin(PIN_HX711_DOUT, PIN_HX711_SCK);
+  if (scale.wait_ready_timeout(1000)) {
+    scale.set_scale(HX711_CALIBRATION_FACTOR);
+    scale.tare(); // Zero out scale with empty hook
+    hx711Available = true;
+    Serial.println(F("[SensorManager] HX711 1KG Load Cell initialized & tared successfully."));
+  } else {
+    hx711Available = false;
+    pinMode(PIN_SALINE_ADC, INPUT);
+    Serial.println(F("[SensorManager] Note: HX711 not detected on DT=32, SCK=33. ADC fallback active on GPIO 34."));
+  }
 
   lastSalineCheckTime = millis();
   return max30102Available;
@@ -173,10 +185,25 @@ void SensorManager::updatePeriodic(PatientVitals &vitals) {
     vitals.temperatureF = (t * 9.0f / 5.0f) + 32.0f;
   }
 
-  // 2. Read Saline / IV Fluid Sensor (GPIO 34)
-  int rawAdc = analogRead(PIN_SALINE_ADC);
-  int pct = map(rawAdc, 300, 3200, 0, 100);
-  vitals.salinePercent = constrain(pct, 0, 100);
+  // 2. Read Saline / IV Fluid Weight Sensor
+  if (hx711Available && scale.is_ready()) {
+    // Read weight in grams (average of 2 readings for high responsiveness & low jitter)
+    float grams = scale.get_units(2);
+    if (grams < 0.0f) grams = 0.0f;
+    currentSalineGrams = grams;
+    vitals.salineWeightGrams = grams;
+
+    // Convert grams to percentage based on standard 500ml (500g) IV saline bottle
+    int pct = (int)((grams / FULL_SALINE_BOTTLE_GRAMS) * 100.0f);
+    vitals.salinePercent = constrain(pct, 0, 100);
+  } else {
+    // Fallback: Analog Potentiometer or Resistive Sensor (GPIO 34)
+    int rawAdc = analogRead(PIN_SALINE_ADC);
+    int pct = map(rawAdc, 300, 3200, 0, 100);
+    vitals.salinePercent = constrain(pct, 0, 100);
+    vitals.salineWeightGrams = (vitals.salinePercent / 100.0f) * FULL_SALINE_BOTTLE_GRAMS;
+    currentSalineGrams = vitals.salineWeightGrams;
+  }
 
   if (vitals.salinePercent > 60) {
     vitals.salineStatus = "FULL";
@@ -194,10 +221,16 @@ void SensorManager::updatePeriodic(PatientVitals &vitals) {
   // 4. Compute Medical Early Warning Score (EWS)
   computeEarlyWarningScore(vitals);
 
-  // 5. Read Built-in Capacitive Touch on GPIO 13 for Nurse Call SOS
+  // 5. Read Built-in Capacitive Touch on GPIO 13 for Nurse Call SOS (Debounced)
   int touchVal = touchRead(PIN_TOUCH_NURSE_CALL);
   if (touchVal < TOUCH_SENSITIVITY_THRESHOLD && touchVal > 0) {
-    vitals.nurseCallActive = true;
+    delay(15);
+    int touchVal2 = touchRead(PIN_TOUCH_NURSE_CALL);
+    if (touchVal2 < TOUCH_SENSITIVITY_THRESHOLD && touchVal2 > 0) {
+      vitals.nurseCallActive = true;
+    } else {
+      vitals.nurseCallActive = false;
+    }
   } else {
     vitals.nurseCallActive = false;
   }

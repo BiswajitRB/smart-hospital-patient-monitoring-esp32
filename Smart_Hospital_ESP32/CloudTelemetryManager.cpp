@@ -34,6 +34,7 @@ bool CloudTelemetryManager::sendTelemetry(const PatientVitals &vitals) {
   jsonPayload += "\"spo2\":" + String(vitals.spo2) + ",";
   jsonPayload += "\"temperature\":" + String(vitals.temperatureC, 1) + ",";
   jsonPayload += "\"salinePercent\":" + String(vitals.salinePercent) + ",";
+  jsonPayload += "\"salineWeightGrams\":" + String(vitals.salineWeightGrams, 1) + ",";
   jsonPayload += "\"salineMinutesLeft\":" + String(vitals.salineMinutesLeft) + ",";
   jsonPayload += "\"salineStatus\":\"" + String(vitals.salineStatus) + "\",";
   jsonPayload += "\"nurseCallActive\":" + String(vitals.nurseCallActive ? "true" : "false") + ",";

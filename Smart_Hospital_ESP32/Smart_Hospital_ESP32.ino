@@ -46,6 +46,7 @@ PatientVitals patientData = {
   0.0f,       // temperatureC
   0.0f,       // temperatureF
   100,        // salinePercent (Default full)
+  500.0f,     // salineWeightGrams (grams)
   55,         // salineMinutesLeft
   "FULL",     // salineStatus
   false,      // nurseCallActive
@@ -118,7 +119,8 @@ void loop() {
     Serial.print("HR: "); Serial.print((int)patientData.heartRateBPM); Serial.print(" BPM | ");
     Serial.print("SpO2: "); Serial.print(patientData.spo2); Serial.print("% | ");
     Serial.print("Temp: "); Serial.print(patientData.temperatureC, 1); Serial.print(" C | ");
-    Serial.print("Saline: "); Serial.print(patientData.salinePercent); Serial.print("% (~");
+    Serial.print("Saline: "); Serial.print(patientData.salinePercent); Serial.print("% (");
+    Serial.print(patientData.salineWeightGrams, 1); Serial.print("g, ~");
     Serial.print(patientData.salineMinutesLeft); Serial.print("m left) | ");
     Serial.print("EWS: "); Serial.print(patientData.ewsStatus); Serial.print(" | ");
     Serial.print("Alarm: Tier-"); Serial.print((int)patientData.alarmLevel); Serial.print(" | ");

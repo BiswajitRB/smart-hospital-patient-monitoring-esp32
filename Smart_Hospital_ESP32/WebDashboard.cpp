@@ -344,6 +344,7 @@ void WebDashboard::setupRoutes() {
     json += "\"tempC\":" + String(vitalsRef->temperatureC, 2) + ",";
     json += "\"tempF\":" + String(vitalsRef->temperatureF, 2) + ",";
     json += "\"saline\":" + String(vitalsRef->salinePercent) + ",";
+    json += "\"salineGrams\":" + String(vitalsRef->salineWeightGrams, 1) + ",";
     json += "\"salineMins\":" + String(vitalsRef->salineMinutesLeft) + ",";
     json += "\"salineStatus\":\"" + vitalsRef->salineStatus + "\",";
     json += "\"nurseCall\":" + String(vitalsRef->nurseCallActive ? "true" : "false") + ",";
