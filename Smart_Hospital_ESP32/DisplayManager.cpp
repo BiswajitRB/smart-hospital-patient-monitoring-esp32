@@ -145,7 +145,7 @@ void DisplayManager::updateDisplay(const PatientVitals &vitals) {
   else if (vitals.ewsStatus == "OBSERVE") lcd.print("WARN");
   else lcd.print("STAB");
 
-  // Bottom Line: [🌡]36.8°C [💧]85% ~45m
+  // Bottom Line: [🌡]36.8°C [💧]53.6%
   lcd.setCursor(0, 1);
   lcd.write(byte(2)); // Thermometer Emoji
   lcd.print(vitals.temperatureC, 1);
@@ -153,8 +153,6 @@ void DisplayManager::updateDisplay(const PatientVitals &vitals) {
   lcd.print("C ");
 
   lcd.write(byte(3)); // Saline Bottle Emoji
-  lcd.print(vitals.salinePercent);
-  lcd.print("% ~");
-  lcd.print(vitals.salineMinutesLeft);
-  lcd.print("m");
+  lcd.print(vitals.salinePercent, 1);
+  lcd.print("%");
 }

@@ -106,7 +106,7 @@ struct PatientVitals {
   bool  fingerDetected;
   float temperatureC;
   float temperatureF;
-  int   salinePercent;
+  float salinePercent;      // Fluid percentage with 1-decimal precision (e.g. 53.6%, 10.5%)
   float salineWeightGrams;  // Real-time mass in grams from 1KG Load Cell
   int   salineMinutesLeft;  // Estimated IV fluid exhaustion time in minutes
   String salineStatus;      // "FULL", "NORMAL", "LOW", "EMPTY"

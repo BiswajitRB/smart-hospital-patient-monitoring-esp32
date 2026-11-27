@@ -45,7 +45,7 @@ PatientVitals patientData = {
   false,      // fingerDetected
   0.0f,       // temperatureC
   0.0f,       // temperatureF
-  100,        // salinePercent (Default full)
+  100.0f,     // salinePercent (Default full)
   500.0f,     // salineWeightGrams (grams)
   55,         // salineMinutesLeft
   "FULL",     // salineStatus

@@ -13,7 +13,7 @@ SensorManager::SensorManager()
     currentBPM(0.0f),
     currentSpO2(0),
     hasFinger(false),
-    lastSalineCheckPercent(100),
+    lastSalineCheckPercent(100.0f),
     lastSalineCheckTime(0),
     dropRatePerMinute(1.8f) { // Standard clinical IV drip rate (~1.8% per min)
   for (byte i = 0; i < RATE_SIZE; i++) {
@@ -108,9 +108,9 @@ void SensorManager::estimateSalineTimeRemaining(PatientVitals &vitals) {
   unsigned long now = millis();
   if (now - lastSalineCheckTime >= 15000) { // Check every 15 seconds
     float elapsedMinutes = (now - lastSalineCheckTime) / 60000.0f;
-    int delta = lastSalineCheckPercent - vitals.salinePercent;
+    float delta = lastSalineCheckPercent - vitals.salinePercent;
     if (delta > 0 && elapsedMinutes > 0) {
-      dropRatePerMinute = (float)delta / elapsedMinutes;
+      dropRatePerMinute = delta / elapsedMinutes;
     }
     lastSalineCheckPercent = vitals.salinePercent;
     lastSalineCheckTime = now;
@@ -193,14 +193,14 @@ void SensorManager::updatePeriodic(PatientVitals &vitals) {
     currentSalineGrams = grams;
     vitals.salineWeightGrams = grams;
 
-    // Convert grams to percentage based on standard 500ml (500g) IV saline bottle
-    int pct = (int)((grams / FULL_SALINE_BOTTLE_GRAMS) * 100.0f);
-    vitals.salinePercent = constrain(pct, 0, 100);
+    // Convert grams to 1-decimal floating percentage (e.g. 53.6%, 10.5%)
+    float pct = (grams / FULL_SALINE_BOTTLE_GRAMS) * 100.0f;
+    vitals.salinePercent = constrain(pct, 0.0f, 100.0f);
   } else {
     // Fallback: Analog Potentiometer or Resistive Sensor (GPIO 34)
     int rawAdc = analogRead(PIN_SALINE_ADC);
-    int pct = map(rawAdc, 300, 3200, 0, 100);
-    vitals.salinePercent = constrain(pct, 0, 100);
+    float pct = ((float)(rawAdc - 300) / (3200.0f - 300.0f)) * 100.0f;
+    vitals.salinePercent = constrain(pct, 0.0f, 100.0f);
     vitals.salineWeightGrams = (vitals.salinePercent / 100.0f) * FULL_SALINE_BOTTLE_GRAMS;
     currentSalineGrams = vitals.salineWeightGrams;
   }

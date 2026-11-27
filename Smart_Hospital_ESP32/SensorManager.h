@@ -40,7 +40,7 @@ private:
   bool  hasFinger;
 
   // Smart Saline Depletion Analytics
-  int lastSalineCheckPercent;
+  float lastSalineCheckPercent;
   unsigned long lastSalineCheckTime;
   float dropRatePerMinute;
 

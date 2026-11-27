@@ -30,8 +30,8 @@ bool AdafruitIOManager::publishVitals(const PatientVitals &vitals) {
   // 3. Body Temperature
   sendFeedData(AIO_FEED_TEMP, String(vitals.temperatureC, 1));
 
-  // 4. Saline Level
-  sendFeedData(AIO_FEED_SALINE, String(vitals.salinePercent));
+  // 4. Saline Level (Floating percentage, e.g. 53.6%)
+  sendFeedData(AIO_FEED_SALINE, String(vitals.salinePercent, 1));
 
   return true;
 }

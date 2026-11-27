@@ -10,7 +10,7 @@ struct VitalLogEntry {
   int bpm;
   int spo2;
   float tempC;
-  int saline;
+  float saline;
   char status[12];
   char event[24];
 };
@@ -308,7 +308,7 @@ void WebDashboard::setupRoutes() {
       csv += String(vitalHistory[i].bpm) + ",";
       csv += String(vitalHistory[i].spo2) + ",";
       csv += String(vitalHistory[i].tempC, 2) + ",";
-      csv += String(vitalHistory[i].saline) + ",";
+      csv += String(vitalHistory[i].saline, 1) + ",";
       csv += String(vitalHistory[i].status) + ",";
       csv += String(vitalHistory[i].event) + "\n";
     }
@@ -343,7 +343,7 @@ void WebDashboard::setupRoutes() {
     json += "\"finger\":" + String(vitalsRef->fingerDetected ? "true" : "false") + ",";
     json += "\"tempC\":" + String(vitalsRef->temperatureC, 2) + ",";
     json += "\"tempF\":" + String(vitalsRef->temperatureF, 2) + ",";
-    json += "\"saline\":" + String(vitalsRef->salinePercent) + ",";
+    json += "\"saline\":" + String(vitalsRef->salinePercent, 1) + ",";
     json += "\"salineGrams\":" + String(vitalsRef->salineWeightGrams, 1) + ",";
     json += "\"salineMins\":" + String(vitalsRef->salineMinutesLeft) + ",";
     json += "\"salineStatus\":\"" + vitalsRef->salineStatus + "\",";
