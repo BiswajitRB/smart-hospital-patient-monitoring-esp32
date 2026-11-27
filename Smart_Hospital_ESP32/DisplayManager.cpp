@@ -72,7 +72,7 @@ void DisplayManager::showWifiStatus(bool connected, const String &ip) {
     lcd.print(ip.substring(0, 16));
   } else {
     lcd.setCursor(0, 0);
-    lcd.print("Standby AP Mode ");
+    lcd.print("Open AP Mode: 1P");
     lcd.setCursor(0, 1);
     lcd.print("AP:" AP_SSID);
   }

@@ -225,12 +225,14 @@ void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
   vitalsRef = vitals;
   alertMgrRef = alertMgr;
 
-  // 1. Always start SoftAP so http://192.168.4.1 is ALWAYS reachable!
+  // 1. Start SoftAP with Open Access (No password) & Single Client limit (AP_MAX_CLIENTS = 1)
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  WiFi.softAP(AP_SSID, NULL, 1, 0, AP_MAX_CLIENTS);
 
-  Serial.println("[WebDashboard] Standalone Hospital SoftAP Started: " AP_SSID);
-  Serial.print("[WebDashboard] AP IP: ");
+  Serial.println(F("[WebDashboard] Standalone Hospital SoftAP Started: " AP_SSID));
+  Serial.println(F("[WebDashboard] Access: OPEN (Zero hardcoded password required)"));
+  Serial.println(F("[WebDashboard] Connection Limit: EXACTLY 1 MOBILE DEVICE"));
+  Serial.print(F("[WebDashboard] Direct Bedside IP: "));
   Serial.println(WiFi.softAPIP());
 
   // 2. Read saved hotspot credentials from ESP32 NVS (Non-Volatile Flash)
@@ -241,20 +243,14 @@ void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
   String savedPass2 = prefs.getString("pass2", BACKUP_WIFI_PASSWORD);
   prefs.end();
 
-  // 3. Register all known and fallback mobile hotspots into WiFiMulti
-  if (savedSSID1.length() > 0 && savedSSID1 != "YOUR_MOBILE_HOTSPOT_NAME") {
+  // 3. Register saved mobile hotspots into WiFiMulti
+  if (savedSSID1.length() > 0) {
     wifiMulti.addAP(savedSSID1.c_str(), savedPass1.c_str());
-    Serial.println("[WebDashboard] Hotspot 1 Registered: " + savedSSID1);
+    Serial.println("[WebDashboard] Registered Dynamic Hotspot 1: " + savedSSID1);
   }
-  if (savedSSID2.length() > 0 && savedSSID2 != "BACKUP_HOTSPOT_NAME") {
+  if (savedSSID2.length() > 0) {
     wifiMulti.addAP(savedSSID2.c_str(), savedPass2.c_str());
-    Serial.println("[WebDashboard] Hotspot 2 Registered: " + savedSSID2);
-  }
-  if (String(DEFAULT_WIFI_SSID) != "YOUR_MOBILE_HOTSPOT_NAME" && String(DEFAULT_WIFI_SSID) != savedSSID1) {
-    wifiMulti.addAP(DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
-  }
-  if (String(BACKUP_WIFI_SSID) != "BACKUP_HOTSPOT_NAME" && String(BACKUP_WIFI_SSID) != savedSSID2) {
-    wifiMulti.addAP(BACKUP_WIFI_SSID, BACKUP_WIFI_PASSWORD);
+    Serial.println("[WebDashboard] Registered Dynamic Hotspot 2: " + savedSSID2);
   }
 
   Serial.println("[WebDashboard] Scanning for active mobile hotspots...");

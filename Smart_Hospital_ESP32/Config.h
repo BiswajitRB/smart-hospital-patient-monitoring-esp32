@@ -52,17 +52,17 @@
 #define PIN_TOUCH_NURSE_CALL 13
 #define TOUCH_SENSITIVITY_THRESHOLD 35
 
-// 3. NETWORK & ADAFRUIT IO CLOUD CREDENTIALS
-#define DEFAULT_WIFI_SSID     "YOUR_MOBILE_HOTSPOT_NAME"
-#define DEFAULT_WIFI_PASSWORD "YOUR_HOTSPOT_PASSWORD"
+// 3. ZERO-HARDCODE DYNAMIC NETWORK SETTINGS
+// No hardcoded passwords or SSIDs: configured dynamically via http://192.168.4.1
+#define DEFAULT_WIFI_SSID     ""
+#define DEFAULT_WIFI_PASSWORD ""
 
-// Secondary Backup Mobile Hotspot (Optional fallback - e.g. friend's or teacher's phone)
-#define BACKUP_WIFI_SSID      "BACKUP_HOTSPOT_NAME"
-#define BACKUP_WIFI_PASSWORD  "BACKUP_HOTSPOT_PASSWORD"
+#define BACKUP_WIFI_SSID      ""
+#define BACKUP_WIFI_PASSWORD  ""
 
-// Standalone Fallback Access Point (Broadcast when mobile hotspot is off)
+// Standalone Bedside Wi-Fi: Open (No password required) & Single-Device Exclusive Lock
 #define AP_SSID               "Smart-Hospital-Bed04"
-#define AP_PASSWORD           "hospital123"
+#define AP_MAX_CLIENTS        1   // Strictly 1 mobile device allowed at a time!
 
 // 4. VERCEL & MONGODB CLOUD TELEMETRY URL
 // Replace with your real live Vercel URL once deployed
