@@ -60,9 +60,10 @@
 #define BACKUP_WIFI_SSID      ""
 #define BACKUP_WIFI_PASSWORD  ""
 
-// Standalone Bedside Wi-Fi: Open (No password required) & Single-Device Exclusive Lock
+// Standalone Bedside Wi-Fi: WPA2 Secured & Single-Device Exclusive Lock
 #define AP_SSID               "Smart-Hospital-Bed04"
-#define AP_MAX_CLIENTS        1   // Strictly 1 mobile device allowed at a time!
+#define AP_PASSWORD           "hospital123" // WPA2 Password to connect
+#define AP_MAX_CLIENTS        1             // Strictly 1 mobile device allowed at a time!
 
 // 4. VERCEL & MONGODB CLOUD TELEMETRY URL
 // Replace with your real live Vercel URL once deployed

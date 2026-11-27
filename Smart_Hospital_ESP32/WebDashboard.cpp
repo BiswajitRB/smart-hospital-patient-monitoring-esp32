@@ -225,12 +225,12 @@ void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
   vitalsRef = vitals;
   alertMgrRef = alertMgr;
 
-  // 1. Start SoftAP with Open Access (No password) & Single Client limit (AP_MAX_CLIENTS = 1)
+  // 1. Start SoftAP with WPA2 Password & Single Client limit (AP_MAX_CLIENTS = 1)
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(AP_SSID, NULL, 1, 0, AP_MAX_CLIENTS);
+  WiFi.softAP(AP_SSID, AP_PASSWORD, 1, 0, AP_MAX_CLIENTS);
 
   Serial.println(F("[WebDashboard] Standalone Hospital SoftAP Started: " AP_SSID));
-  Serial.println(F("[WebDashboard] Access: OPEN (Zero hardcoded password required)"));
+  Serial.println(F("[WebDashboard] Security: WPA2-PSK (Password: " AP_PASSWORD ")"));
   Serial.println(F("[WebDashboard] Connection Limit: EXACTLY 1 MOBILE DEVICE"));
   Serial.print(F("[WebDashboard] Direct Bedside IP: "));
   Serial.println(WiFi.softAPIP());
