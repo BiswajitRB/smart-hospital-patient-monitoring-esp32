@@ -104,13 +104,20 @@ const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
       </div>
     </div>
 
-    <!-- Dynamic Wi-Fi Hotspot Setup Box -->
+    <!-- Dynamic Multi-Hotspot Wi-Fi Setup Box -->
     <div id="wifiBox" class="wifi-box">
-      <h3>Connect to Any Mobile Hotspot / Wi-Fi</h3>
+      <h3>Multi-Hotspot Wi-Fi Manager</h3>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">Save up to 2 mobile hotspots. ESP32 will automatically connect to whichever is active!</p>
       <form action="/save-wifi" method="POST">
-        <input type="text" name="ssid" placeholder="Hotspot Name (SSID)" required>
-        <input type="password" name="pass" placeholder="Hotspot Password">
-        <button type="submit">Connect ESP32 to Hotspot</button>
+        <label style="font-size:11px;color:#38bdf8;font-weight:bold;display:block;margin-bottom:4px;">PRIMARY HOTSPOT (PHONE 1):</label>
+        <input type="text" name="ssid" placeholder="Hotspot 1 Name (SSID)" required>
+        <input type="password" name="pass" placeholder="Hotspot 1 Password">
+
+        <label style="font-size:11px;color:#38bdf8;font-weight:bold;display:block;margin-bottom:4px;">BACKUP HOTSPOT (PHONE 2 / SECONDARY):</label>
+        <input type="text" name="ssid2" placeholder="Hotspot 2 Name (Optional)">
+        <input type="password" name="pass2" placeholder="Hotspot 2 Password (Optional)">
+
+        <button type="submit">Save Hotspots & Auto-Connect</button>
       </form>
     </div>
 
@@ -218,7 +225,7 @@ void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
   vitalsRef = vitals;
   alertMgrRef = alertMgr;
 
-  // Always broadcast our hospital bedside SoftAP
+  // 1. Always start SoftAP so http://192.168.4.1 is ALWAYS reachable!
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
 
@@ -226,26 +233,40 @@ void WebDashboard::begin(PatientVitals *vitals, AlertManager *alertMgr) {
   Serial.print("[WebDashboard] AP IP: ");
   Serial.println(WiFi.softAPIP());
 
-  // Read saved hotspot credentials from ESP32 NVS (Non-Volatile Flash)
+  // 2. Read saved hotspot credentials from ESP32 NVS (Non-Volatile Flash)
   prefs.begin("hospital_wifi", false);
-  String savedSSID = prefs.getString("ssid", DEFAULT_WIFI_SSID);
-  String savedPass = prefs.getString("pass", DEFAULT_WIFI_PASSWORD);
+  String savedSSID1 = prefs.getString("ssid", DEFAULT_WIFI_SSID);
+  String savedPass1 = prefs.getString("pass", DEFAULT_WIFI_PASSWORD);
+  String savedSSID2 = prefs.getString("ssid2", BACKUP_WIFI_SSID);
+  String savedPass2 = prefs.getString("pass2", BACKUP_WIFI_PASSWORD);
   prefs.end();
 
-  Serial.print("[WebDashboard] Attempting Wi-Fi Connection to: ");
-  Serial.println(savedSSID);
+  // 3. Register all known and fallback mobile hotspots into WiFiMulti
+  if (savedSSID1.length() > 0 && savedSSID1 != "YOUR_MOBILE_HOTSPOT_NAME") {
+    wifiMulti.addAP(savedSSID1.c_str(), savedPass1.c_str());
+    Serial.println("[WebDashboard] Hotspot 1 Registered: " + savedSSID1);
+  }
+  if (savedSSID2.length() > 0 && savedSSID2 != "BACKUP_HOTSPOT_NAME") {
+    wifiMulti.addAP(savedSSID2.c_str(), savedPass2.c_str());
+    Serial.println("[WebDashboard] Hotspot 2 Registered: " + savedSSID2);
+  }
+  if (String(DEFAULT_WIFI_SSID) != "YOUR_MOBILE_HOTSPOT_NAME" && String(DEFAULT_WIFI_SSID) != savedSSID1) {
+    wifiMulti.addAP(DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
+  }
+  if (String(BACKUP_WIFI_SSID) != "BACKUP_HOTSPOT_NAME" && String(BACKUP_WIFI_SSID) != savedSSID2) {
+    wifiMulti.addAP(BACKUP_WIFI_SSID, BACKUP_WIFI_PASSWORD);
+  }
 
-  WiFi.begin(savedSSID.c_str(), savedPass.c_str());
-
-  int retries = 0;
-  while (WiFi.status() != WL_CONNECTED && retries < 10) {
+  Serial.println("[WebDashboard] Scanning for active mobile hotspots...");
+  int attempts = 0;
+  while (wifiMulti.run() != WL_CONNECTED && attempts < 8) {
     delay(500);
     Serial.print(".");
-    retries++;
+    attempts++;
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n[WebDashboard] Connected to Wi-Fi Station!");
+    Serial.println("\n[WebDashboard] Connected to active hotspot: " + WiFi.SSID());
     Serial.print("[WebDashboard] Hospital Station IP: ");
     Serial.println(WiFi.localIP());
   } else {
@@ -271,28 +292,37 @@ void WebDashboard::setupRoutes() {
     }
   });
 
-  // Dynamic Wi-Fi Hotspot Saver (Stores into Non-Volatile Flash Memory)
+  // Dynamic Multi-Hotspot Saver (Stores multiple hotspots into Non-Volatile Flash)
   server.on("/save-wifi", HTTP_POST, [this]() {
     String newSSID = server.arg("ssid");
     String newPass = server.arg("pass");
+    String newSSID2 = server.arg("ssid2");
+    String newPass2 = server.arg("pass2");
 
     if (newSSID.length() > 0) {
       prefs.begin("hospital_wifi", false);
       prefs.putString("ssid", newSSID);
       prefs.putString("pass", newPass);
+      if (newSSID2.length() > 0) {
+        prefs.putString("ssid2", newSSID2);
+        prefs.putString("pass2", newPass2);
+      }
       prefs.end();
 
       String html = "<html><body style='font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:40px;'>";
-      html += "<h2 style='color:#38bdf8;'>Wi-Fi Credentials Saved!</h2>";
-      html += "<p>Connecting ESP32 to: <b>" + newSSID + "</b>...</p>";
-      html += "<p>ESP32 is rebooting. Please wait 5 seconds.</p>";
-      html += "</body></html>";
+      html += "<h2 style='color:#38bdf8;'>Multi-Hotspot Wi-Fi Saved!</h2>";
+      html += "<p>Primary Hotspot: <b>" + newSSID + "</b></p>";
+      if (newSSID2.length() > 0) {
+        html += "<p>Backup Hotspot: <b>" + newSSID2 + "</b></p>";
+      }
+      html += "<p>ESP32 will auto-connect to whichever is active.</p>";
+      html += "<p>Rebooting in 3 seconds...</p></body></html>";
       server.send(200, "text/html", html);
 
-      delay(1500);
+      delay(2000);
       ESP.restart();
     } else {
-      server.send(400, "text/plain", "SSID cannot be empty");
+      server.send(400, "text/plain", "Primary SSID cannot be empty");
     }
   });
 
@@ -361,6 +391,15 @@ void WebDashboard::setupRoutes() {
 
 void WebDashboard::handleClient() {
   server.handleClient();
+
+  // Automatic seamless hotspot auto-reconnection and roaming
+  static unsigned long lastWifiCheck = 0;
+  if (millis() - lastWifiCheck > 8000) { // Check every 8 seconds
+    lastWifiCheck = millis();
+    if (WiFi.status() != WL_CONNECTED) {
+      wifiMulti.run();
+    }
+  }
 }
 
 String WebDashboard::getLocalIP() const {

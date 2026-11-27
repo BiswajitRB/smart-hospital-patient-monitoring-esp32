@@ -3,6 +3,7 @@
 
 #include "Config.h"
 #include <WiFi.h>
+#include <WiFiMulti.h>
 #include <WebServer.h>
 
 class AlertManager; // Forward declaration
@@ -17,6 +18,7 @@ public:
 
 private:
   WebServer server;
+  WiFiMulti wifiMulti;
   PatientVitals *vitalsRef;
   AlertManager  *alertMgrRef;
 

@@ -56,6 +56,10 @@
 #define DEFAULT_WIFI_SSID     "YOUR_MOBILE_HOTSPOT_NAME"
 #define DEFAULT_WIFI_PASSWORD "YOUR_HOTSPOT_PASSWORD"
 
+// Secondary Backup Mobile Hotspot (Optional fallback - e.g. friend's or teacher's phone)
+#define BACKUP_WIFI_SSID      "BACKUP_HOTSPOT_NAME"
+#define BACKUP_WIFI_PASSWORD  "BACKUP_HOTSPOT_PASSWORD"
+
 // Standalone Fallback Access Point (Broadcast when mobile hotspot is off)
 #define AP_SSID               "Smart-Hospital-Bed04"
 #define AP_PASSWORD           "hospital123"
