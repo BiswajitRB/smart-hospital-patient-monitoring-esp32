@@ -47,3 +47,5 @@ Icon
 # --- Medical Clinical CSV Reports (Generated Locally) ---
 *.csv
 *.log
+*.py
+*.pdf
