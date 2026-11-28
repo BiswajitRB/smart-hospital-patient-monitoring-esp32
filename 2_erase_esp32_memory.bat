@@ -1,90 +1,100 @@
 @echo off
-setlocal enabledelayedexpansion
-title ESP32 Flash Memory Erase Tool
+setlocal
+title ESP32 Flash Memory Format and Factory Reset Tool
 
 echo =========================================================================
-echo             ESP32 COMPLETE MEMORY ERASE / FACTORY RESET
+echo             ESP32 COMPLETE MEMORY FORMAT / FACTORY RESET
 echo =========================================================================
-echo This tool will completely wipe the ESP32 flash memory:
-echo   - Clears old sketches and corrupt program data
-echo   - Clears old saved Wi-Fi credentials and NVS partition
-echo   - Restores the ESP32 to clean, empty factory state
+echo This tool works on ANY Windows laptop without needing Arduino IDE:
+echo   [1] Clears all old firmware, flash memory, and corrupt programs
+echo   [2] Clears old Wi-Fi credentials, IP bindings, and NVS storage
+echo   [3] Restores the ESP32 to 100 percent fresh, factory-clean empty state
 echo =========================================================================
 echo.
 
-:: 1. Search for esptool.exe in Arduino15 directory
-set ESPTOOL=
-if exist "%LOCALAPPDATA%\Arduino15\packages\esp32\tools\esptool_py\4.5.1\esptool.exe" (
-    set "ESPTOOL=%LOCALAPPDATA%\Arduino15\packages\esp32\tools\esptool_py\4.5.1\esptool.exe"
-)
+set "TOOL_DIR=%~dp0tools"
+set "ESPTOOL=%TOOL_DIR%\esptool.exe"
 
-if "%ESPTOOL%"=="" (
-    for /d %%D in ("%LOCALAPPDATA%\Arduino15\packages\esp32\tools\esptool_py\*") do (
-        if exist "%%D\esptool.exe" set "ESPTOOL=%%D\esptool.exe"
-    )
-)
+if exist "%ESPTOOL%" goto ESPTOOL_READY
 
-if "%ESPTOOL%"=="" (
-    echo [INFO] Searching system for esptool...
-    where esptool.exe >nul 2>nul
-    if %errorlevel% equ 0 (
-        for /f "delims=" %%i in ('where esptool.exe') do set "ESPTOOL=%%i"
-    )
-)
+echo [INFO] Flasher tool not found locally.
+echo [INFO] Auto-downloading standalone portable esptool flasher...
+if not exist "%TOOL_DIR%" mkdir "%TOOL_DIR%"
+powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/espressif/esptool/releases/download/v4.8.1/esptool-v4.8.1-win64.zip' -OutFile '%TOOL_DIR%\esptool.zip'; Expand-Archive '%TOOL_DIR%\esptool.zip' -DestinationPath '%TOOL_DIR%' -Force; Get-ChildItem -Path '%TOOL_DIR%' -Filter 'esptool.exe' -Recurse | Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName '%TOOL_DIR%\esptool.exe' -Force }; Remove-Item '%TOOL_DIR%\esptool.zip' -Force -ErrorAction SilentlyContinue"
 
-if "%ESPTOOL%"=="" (
-    echo [INFO] Checking python esptool module...
-    python -m esptool version >nul 2>nul
-    if %errorlevel% equ 0 (
-        set "ESPTOOL=python -m esptool"
-    )
-)
-
-if "%ESPTOOL%"=="" (
-    echo [ERROR] esptool.exe not found!
-    echo Please make sure Arduino IDE and ESP32 board support are installed.
-    echo (You can run '1_install_esp32_and_libraries.bat' to install them).
+if not exist "%ESPTOOL%" (
+    echo.
+    echo [ERROR] Could not find or download esptool.exe flasher!
+    echo Please make sure this laptop has an internet connection or copy the
+    echo 'tools' folder from your main computer.
     echo.
     pause
     exit /b 1
 )
 
-echo [OK] Found esptool: %ESPTOOL%
-echo.
-echo Make sure your ESP32 is plugged into your laptop via USB cable!
-echo.
-echo [NOTE] If connecting hangs at "Connecting........_____.....",
-echo        press and hold the "BOOT" button on the ESP32 for 2 seconds.
+:ESPTOOL_READY
+echo [OK] Portable ESP32 Flasher Ready: %ESPTOOL%
 echo.
 
-set /p COMPORT="Enter COM port (e.g. COM3, COM5) or press ENTER for Auto-Detect: "
+echo Scanning for connected USB serial devices...
+set "DETECTED_PORTS="
+for /f "tokens=*" %%p in ('%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -Command "[System.IO.Ports.SerialPort]::GetPortNames() -join ' '"') do set "DETECTED_PORTS=%%p"
 
-echo.
-echo Erasing ESP32 Flash Memory... Please wait.
-echo.
-
-if "%COMPORT%"=="" (
-    %ESPTOOL% erase_flash
+if not "%DETECTED_PORTS%"=="" (
+    echo [FOUND] Connected COM Ports: %DETECTED_PORTS%
 ) else (
-    %ESPTOOL% --port %COMPORT% erase_flash
+    echo [NOTICE] No COM port detected yet.
+    echo          Please plug your ESP32 into a USB port on this laptop.
 )
 
-if %errorlevel% equ 0 (
-    echo.
-    echo =========================================================================
-    echo [SUCCESS] ESP32 Memory is completely EMPTY and FRESH!
-    echo =========================================================================
-    echo You can now open Arduino IDE and upload your 'Smart_Hospital_ESP32.ino' sketch!
-    echo =========================================================================
+echo.
+echo =========================================================================
+echo READY TO FORMAT ESP32 FLASH
+echo =========================================================================
+echo NOTE: If connecting hangs at "Connecting........_____.....",
+echo       PRESS AND HOLD the physical "BOOT" button on the ESP32 board for 2 seconds!
+echo =========================================================================
+echo.
+
+set "COMPORT="
+set /p "COMPORT=Enter COM port (e.g. COM3, COM4) or press ENTER for Auto-Detect: "
+
+if defined COMPORT set "COMPORT=%COMPORT: =%"
+
+echo.
+echo [STARTING] Erasing and Formatting ESP32 Flash Memory...
+echo Please do not unplug the USB cable while formatting...
+echo.
+
+if not defined COMPORT (
+    "%ESPTOOL%" --chip esp32 erase_flash
 ) else (
-    echo.
-    echo =========================================================================
-    echo [WARNING] Erase process encountered an issue.
-    echo 1. Ensure your ESP32 USB cable supports DATA (not just charging).
-    echo 2. Check Device Manager -> Ports (COM & LPT) to see your COM port number.
-    echo 3. Hold down the "BOOT" button on your ESP32 while it says "Connecting...".
-    echo =========================================================================
+    "%ESPTOOL%" --chip esp32 --port %COMPORT% erase_flash
 )
 
+if errorlevel 1 goto ERASE_FAILED
+
+echo.
+echo =========================================================================
+echo [SUCCESS] ESP32 FLASH MEMORY IS 100 PERCENT FORMATTED AND FRESH!
+echo =========================================================================
+echo The ESP32 is now completely wiped and ready for clean firmware upload:
+echo   1. Run '1_install_esp32_and_libraries.bat' to set up board core and libraries
+echo   2. Run '3_upload_esp32_firmware.bat' to upload Smart Hospital Firmware
+echo =========================================================================
+goto FINISHED
+
+:ERASE_FAILED
+echo.
+echo =========================================================================
+echo [TROUBLESHOOTING TIPS]
+echo 1. Ensure the micro-USB cable is a DATA cable (not a power-only cable).
+echo 2. Check Device Manager to verify your ESP32 COM port.
+echo 3. When you see "Connecting........_____.....", HOLD the "BOOT" button on
+echo    your ESP32 board for 2 seconds until the erase starts.
+echo =========================================================================
+goto FINISHED
+
+:FINISHED
 echo.
 pause

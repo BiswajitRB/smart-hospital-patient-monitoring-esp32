@@ -48,5 +48,13 @@ Icon
 *.csv
 *.log
 *.py
+
+# --- PDF Deliverables & Documents ---
 *.pdf
+
+# --- Cloud Web Application (Maintained in Separate Repository) ---
+smart-hospital-web/
 smart-hospital-web
+
+# --- Portable Local Flasher & CLI Tools ---
+tools/
