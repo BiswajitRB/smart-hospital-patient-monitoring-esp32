@@ -9,30 +9,35 @@ echo This tool compiles and flashes the Smart Hospital firmware on ANY laptop.
 echo =========================================================================
 echo.
 
-set "TOOL_DIR=%~dp0tools"
-set "CLI=%TOOL_DIR%\arduino-cli.exe"
+set "GLOBAL_CLI=%LOCALAPPDATA%\ArduinoCLI\arduino-cli.exe"
+set "LOCAL_CLI=%~dp0tools\arduino-cli.exe"
 
-:: 1. Search for portable arduino-cli.exe in project tools folder first
-if not exist "%CLI%" (
-    if exist "%LOCALAPPDATA%\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" (
-        set "CLI=%LOCALAPPDATA%\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe"
-    )
-)
-if not exist "%CLI%" (
-    if exist "C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" (
-        set "CLI=C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe"
-    )
-)
-if not exist "%CLI%" (
+set "CLI="
+if exist "%LOCAL_CLI%" set "CLI=%LOCAL_CLI%"
+if not defined CLI if exist "%GLOBAL_CLI%" set "CLI=%GLOBAL_CLI%"
+if not defined CLI if exist "%LOCALAPPDATA%\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" set "CLI=%LOCALAPPDATA%\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe"
+if not defined CLI if exist "C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" set "CLI=C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe"
+
+if not defined CLI (
     where arduino-cli >nul 2>nul
     if !errorlevel! equ 0 (
         for /f "delims=" %%i in ('where arduino-cli') do set "CLI=%%i"
     )
 )
 
-if not exist "%CLI%" (
-    echo [ERROR] arduino-cli.exe not found!
-    echo Please run '1_install_esp32_and_libraries.bat' first to set up tools.
+:: If not found, auto-download standalone engine so user is never blocked!
+if not defined CLI (
+    echo [INFO] Arduino CLI engine not found in current folder.
+    echo [INFO] Auto-fetching standalone portable engine...
+    if not exist "%LOCALAPPDATA%\ArduinoCLI" mkdir "%LOCALAPPDATA%\ArduinoCLI"
+    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip' -OutFile '%LOCALAPPDATA%\ArduinoCLI\cli.zip'; Expand-Archive '%LOCALAPPDATA%\ArduinoCLI\cli.zip' -DestinationPath '%LOCALAPPDATA%\ArduinoCLI' -Force; Get-ChildItem -Path '%LOCALAPPDATA%\ArduinoCLI' -Filter 'arduino-cli.exe' -Recurse | Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName '%LOCALAPPDATA%\ArduinoCLI\arduino-cli.exe' -Force }; Remove-Item '%LOCALAPPDATA%\ArduinoCLI\cli.zip' -Force -ErrorAction SilentlyContinue"
+    if exist "%LOCALAPPDATA%\ArduinoCLI\arduino-cli.exe" set "CLI=%LOCALAPPDATA%\ArduinoCLI\arduino-cli.exe"
+)
+
+if not defined CLI (
+    echo.
+    echo [ERROR] arduino-cli.exe engine could not be initialized!
+    echo Please ensure this laptop has an active internet connection.
     echo.
     pause
     exit /b 1
@@ -42,6 +47,20 @@ echo [OK] Active Arduino Engine: %CLI%
 echo.
 
 set SKETCH_PATH="%~dp0Smart_Hospital_ESP32"
+
+if not exist %SKETCH_PATH% (
+    echo.
+    echo [WARNING] The sketch folder 'Smart_Hospital_ESP32' was not found next to this script!
+    echo (This happens if you run directly inside a ZIP file without extracting it first).
+    echo.
+    echo PLEASE DO THIS:
+    echo 1. Right-click the downloaded zip file in Downloads
+    echo 2. Click 'Extract All...' and click 'Extract'
+    echo 3. Open the extracted folder and run this file again!
+    echo.
+    pause
+    exit /b 1
+)
 
 echo [1/2] Compiling ESP32 sketch with HX711, MAX30102, DS18B20...
 "%CLI%" compile --fqbn esp32:esp32:esp32 %SKETCH_PATH%
